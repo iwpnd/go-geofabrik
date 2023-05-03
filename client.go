@@ -52,7 +52,7 @@ func (g *Geofabrik) GetMD5(name string) (string, error) {
 	}
 	defer res.RawBody().Close()
 
-	md5 := strings.Split(res.String(), "  ")[1]
+	md5 := strings.Split(res.String(), "  ")[0]
 
 	return md5, nil
 }

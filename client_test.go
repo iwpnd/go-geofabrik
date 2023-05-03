@@ -26,7 +26,7 @@ func setupTestServer() func() {
 						case "text/plain; charset=utf-8":
 							w.WriteHeader(http.StatusOK)
 							w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-							fmt.Fprint(w, "foo  bar")
+							fmt.Fprint(w, "bar  foo")
 						default:
 							w.WriteHeader(http.StatusNotAcceptable)
 							fmt.Fprint(w, "nope")
