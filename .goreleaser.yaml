@@ -1,4 +1,4 @@
-project_name: geofabrik
+project_name: go-geofabrik
 builds:
   - env:
       - CGO_ENABLED=0
@@ -26,3 +26,5 @@ changelog:
       - "^docs:"
       - "^test:"
       - "^chore:"
+      - "^chore(deps):"
+      - "^ci:"
