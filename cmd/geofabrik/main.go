@@ -10,7 +10,7 @@ import (
 )
 
 var g *geofabrik.Geofabrik
-var nameFlag cli.StringFlag
+var err error
 var latestMD5Command cli.Command
 
 func latestMD5(ctx *cli.Context) error {
@@ -25,7 +25,10 @@ func latestMD5(ctx *cli.Context) error {
 }
 
 func init() {
-	g = geofabrik.New()
+	g, err = geofabrik.New("https://downloads.geofabrik.de")
+	if err != nil {
+		panic("could not init geofabrik client")
+	}
 
 	latestMD5Command = cli.Command{
 		Name:   "md5",
