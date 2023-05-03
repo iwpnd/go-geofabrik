@@ -25,7 +25,7 @@ func latestMD5(ctx *cli.Context) error {
 }
 
 func init() {
-	g, err = geofabrik.New("https://downloads.geofabrik.de")
+	g, err = geofabrik.New("https://download.geofabrik.de")
 	if err != nil {
 		panic("could not init geofabrik client")
 	}
