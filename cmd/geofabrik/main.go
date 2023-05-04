@@ -15,7 +15,7 @@ var latestMD5Command cli.Command
 
 func latestMD5(ctx *cli.Context) error {
 	name := ctx.Args().First()
-	md5, err := g.GetMD5(name)
+	md5, err := g.LatestMD5(name)
 	if err != nil {
 		return err
 	}

@@ -46,7 +46,7 @@ func New(host string, options ...rip.Option) (*Geofabrik, error) {
 	return &Geofabrik{c}, nil
 }
 
-func (g *Geofabrik) GetMD5(name string) (string, error) {
+func (g *Geofabrik) LatestMD5(name string) (string, error) {
 	path := tokenizePath(name)
 	req := g.NR().SetHeader("Accept", "text/plain; charset=utf-8")
 	if path == "" {
