@@ -51,7 +51,7 @@ func (p *Path) process() error {
 		return err
 	}
 
-	// sanitize stat and end
+	// sanitize start and end
 	p.name = strings.TrimPrefix(p.name, "/")
 	p.name = strings.TrimSuffix(p.name, "/")
 
