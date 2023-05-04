@@ -7,6 +7,13 @@ import (
 	"github.com/iwpnd/rip"
 )
 
+type FileType string
+
+const (
+	md5type FileType = ".osm.pbf.md5"
+	pbftype FileType = ".osm.pbf"
+)
+
 type ErrMissingName struct {
 }
 
@@ -46,7 +53,7 @@ func (g *Geofabrik) GetMD5(name string) (string, error) {
 		return "", &ErrMissingName{}
 	}
 
-	res, err := req.Execute("GET", fmt.Sprintf("%s.osm.pbf.md5", path))
+	res, err := req.Execute("GET", fmt.Sprintf("%s.%s", path, md5type))
 	if err != nil {
 		return "", err
 	}
