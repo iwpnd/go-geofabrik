@@ -83,7 +83,6 @@ func setupTestServer(responseData []byte) func() {
 								fmt.Println("failed to send response: ", err.Error())
 								return
 							}
-
 							return
 						default:
 							w.WriteHeader(http.StatusNotAcceptable)
@@ -129,6 +128,11 @@ func TestTokenizePath(t *testing.T) {
 			input:            "europe/ireland-and-northern-ireland",
 			expectedUri:      "/europe/ireland-and-northern-ireland-latest",
 			expectedFileName: "ireland-and-northern-ireland-latest",
+		},
+		"should sanitize input": {
+			input:            "/europe/",
+			expectedUri:      "/europe-latest",
+			expectedFileName: "europe-latest",
 		},
 	}
 

@@ -51,6 +51,10 @@ func (p *Path) process() error {
 		return err
 	}
 
+	// sanitize stat and end
+	p.name = strings.TrimPrefix(p.name, "/")
+	p.name = strings.TrimSuffix(p.name, "/")
+
 	elements := strings.Split(p.name, "/")
 	if len(elements) == 1 {
 		p.filename = fmt.Sprintf("%s-latest", elements[0])
