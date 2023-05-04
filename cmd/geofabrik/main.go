@@ -6,6 +6,7 @@ import (
 	"os"
 
 	geofabrik "github.com/iwpnd/go-geofabrik"
+	"github.com/iwpnd/rip"
 	"github.com/urfave/cli/v2"
 )
 
@@ -36,7 +37,7 @@ func simpleDownload(ctx *cli.Context) error {
 	return nil
 }
 func init() {
-	g, err = geofabrik.New("https://download.geofabrik.de")
+	g, err = geofabrik.New("https://download.geofabrik.de", rip.WithTimeout(0))
 	if err != nil {
 		panic("could not init geofabrik client")
 	}
