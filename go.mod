@@ -3,7 +3,7 @@ module github.com/iwpnd/go-geofabrik
 go 1.19
 
 require (
-	github.com/iwpnd/rip v0.2.0
+	github.com/iwpnd/rip v0.3.0
 	github.com/stretchr/testify v1.8.2
 	github.com/urfave/cli/v2 v2.25.3
 )

@@ -1,9 +1,14 @@
 package client
 
 import (
+	"bytes"
+	"crypto/md5"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,7 +18,30 @@ var (
 	ts *httptest.Server
 )
 
-func setupTestServer() func() {
+func fileExists(dir string, filename string) bool {
+	info, err := os.Stat(fmt.Sprintf("%s/%s", dir, filename))
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
+}
+
+func randomDataOfSize(size int) []byte {
+	return []byte(strings.Repeat("#", size))
+}
+
+func compareHash(t *testing.T, expected, got []byte) bool {
+	expectedHash := md5.Sum(expected)
+	gotHash := md5.Sum(got)
+
+	if expectedHash != gotHash {
+		t.Errorf("expected: %s, got: %s", expectedHash, gotHash)
+	}
+
+	return expectedHash == gotHash
+}
+
+func setupTestServer(responseData []byte) func() {
 	ts = httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
@@ -27,6 +55,36 @@ func setupTestServer() func() {
 							w.WriteHeader(http.StatusOK)
 							w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 							fmt.Fprint(w, "bar  foo")
+						default:
+							w.WriteHeader(http.StatusNotAcceptable)
+							fmt.Fprint(w, "nope")
+						}
+					}
+				case "/foo-latest.osm.pbf":
+					{
+						accept := r.Header.Get("Accept")
+						switch accept {
+						case "application/octet-stream":
+							w.WriteHeader(http.StatusOK)
+							w.Header().Set("Content-Type", "application/octet-stream")
+							if responseData != nil {
+								reader := bytes.NewReader(responseData)
+								_, err := io.Copy(w, reader)
+								if err != nil {
+									fmt.Println("failed to send response: ", err.Error())
+									return
+								}
+								return
+							}
+
+							reader := bytes.NewReader(randomDataOfSize(1028 * 128))
+							_, err := io.Copy(w, reader)
+							if err != nil {
+								fmt.Println("failed to send response: ", err.Error())
+								return
+							}
+
+							return
 						default:
 							w.WriteHeader(http.StatusNotAcceptable)
 							fmt.Fprint(w, "nope")
@@ -46,43 +104,42 @@ func setupTestServer() func() {
 
 func TestTokenizePath(t *testing.T) {
 	type tcase struct {
-		name     string
+		input    []string
 		expected string
 	}
 
 	tests := map[string]tcase{
 		"should tokenize one level": {
-			name:     "europe",
+			input:    []string{"europe"},
 			expected: "/europe-latest",
 		},
 		"should tokenize two levels": {
-			name:     "europe/germany",
+			input:    []string{"europe", "germany"},
 			expected: "/europe/germany-latest",
 		},
 		"should tokenize three levels": {
-			name:     "europe/germany/berlin",
+			input:    []string{"europe", "germany", "berlin"},
 			expected: "/europe/germany/berlin-latest",
 		},
 		"should persist other seperators": {
-			name:     "europe/ireland-and-northern-ireland",
+			input:    []string{"europe", "ireland-and-northern-ireland"},
 			expected: "/europe/ireland-and-northern-ireland-latest",
 		},
 	}
 
 	for _, test := range tests {
-		got := tokenizePath(test.name)
+		got := tokenizePath(test.input)
 		assert.Equal(t, test.expected, got)
 	}
 }
 
 func TestGetMD5(t *testing.T) {
-	teardown := setupTestServer()
+	teardown := setupTestServer(nil)
 	defer teardown()
 
 	g, err := New(ts.URL)
-
 	if err != nil {
-		t.Error("could not initialize client")
+		t.Fatal("could not initialize client")
 	}
 
 	type tcase struct {
@@ -115,4 +172,35 @@ func TestGetMD5(t *testing.T) {
 	for _, test := range tests {
 		fn(test)
 	}
+}
+
+func TestSimpleDownload(t *testing.T) {
+	dir, err := os.MkdirTemp(".", "tmp")
+	if err != nil {
+		t.Fatalf("error creating temp directory: %s", err)
+	}
+	defer os.RemoveAll(dir)
+
+	responseFile := randomDataOfSize(1024 * 128)
+	teardown := setupTestServer(responseFile)
+	defer teardown()
+
+	g, err := New(ts.URL)
+	if err != nil {
+		t.Fatal("could not initialize client")
+	}
+
+	err = g.SimpleDownload("foo", dir)
+	if err != nil {
+		t.Fatalf("failed to download: %v", err.Error())
+	}
+
+	testfile := "foo-latest.osm.pbf"
+	assert.Equal(t, true, fileExists(dir, testfile))
+
+	got, err := os.ReadFile(fmt.Sprintf("%s/%s", dir, testfile))
+	if err != nil {
+		t.Fatalf("could not open test file: %s/%s", dir, testfile)
+	}
+	assert.Equal(t, true, compareHash(t, responseFile, got))
 }

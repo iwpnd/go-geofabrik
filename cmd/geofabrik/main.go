@@ -12,6 +12,7 @@ import (
 var g *geofabrik.Geofabrik
 var err error
 var latestMD5Command cli.Command
+var simpleDownloadCommand cli.Command
 
 func latestMD5(ctx *cli.Context) error {
 	name := ctx.Args().First()
@@ -24,6 +25,16 @@ func latestMD5(ctx *cli.Context) error {
 	return nil
 }
 
+func simpleDownload(ctx *cli.Context) error {
+	name := ctx.Args().First()
+	err := g.SimpleDownload(name, ".")
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("download successful")
+	return nil
+}
 func init() {
 	g, err = geofabrik.New("https://download.geofabrik.de")
 	if err != nil {
@@ -35,6 +46,11 @@ func init() {
 		Usage:  "get latest md5 of geofabrik dataset",
 		Action: latestMD5,
 	}
+	simpleDownloadCommand = cli.Command{
+		Name:   "download",
+		Usage:  "download dataset to outputpath",
+		Action: simpleDownload,
+	}
 }
 
 func main() {
@@ -43,6 +59,7 @@ func main() {
 		Usage: "geofabrik",
 		Commands: []*cli.Command{
 			&latestMD5Command,
+			&simpleDownloadCommand,
 		},
 	}
 
