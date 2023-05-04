@@ -104,32 +104,41 @@ func setupTestServer(responseData []byte) func() {
 
 func TestTokenizePath(t *testing.T) {
 	type tcase struct {
-		input    []string
-		expected string
+		input            string
+		expectedUri      string
+		expectedFileName string
 	}
 
 	tests := map[string]tcase{
 		"should tokenize one level": {
-			input:    []string{"europe"},
-			expected: "/europe-latest",
+			input:            "europe",
+			expectedUri:      "/europe-latest",
+			expectedFileName: "europe-latest",
 		},
 		"should tokenize two levels": {
-			input:    []string{"europe", "germany"},
-			expected: "/europe/germany-latest",
+			input:            "europe/germany",
+			expectedUri:      "/europe/germany-latest",
+			expectedFileName: "germany-latest",
 		},
 		"should tokenize three levels": {
-			input:    []string{"europe", "germany", "berlin"},
-			expected: "/europe/germany/berlin-latest",
+			input:            "europe/germany/berlin",
+			expectedUri:      "/europe/germany/berlin-latest",
+			expectedFileName: "berlin-latest",
 		},
 		"should persist other seperators": {
-			input:    []string{"europe", "ireland-and-northern-ireland"},
-			expected: "/europe/ireland-and-northern-ireland-latest",
+			input:            "europe/ireland-and-northern-ireland",
+			expectedUri:      "/europe/ireland-and-northern-ireland-latest",
+			expectedFileName: "ireland-and-northern-ireland-latest",
 		},
 	}
 
 	for _, test := range tests {
-		got := tokenizePath(test.input)
-		assert.Equal(t, test.expected, got)
+		p, err := newPath(test.input)
+		if err != nil {
+			t.Fatalf("failed to create valid path: %v", err.Error())
+		}
+		assert.Equal(t, test.expectedUri, p.uri)
+		assert.Equal(t, test.expectedFileName, p.filename)
 	}
 }
 

@@ -16,26 +16,56 @@ const (
 	pbftype FileType = ".osm.pbf"
 )
 
-type ErrMissingName struct {
+type ErrEmptyName struct{}
+
+func (e *ErrEmptyName) Error() string {
+	return "name is empty"
 }
 
-func (e *ErrMissingName) Error() string {
-	return "missing dataset name"
+type Path struct {
+	name     string
+	uri      string
+	filename string
+}
+
+func newPath(name string) (*Path, error) {
+	p := &Path{name: name}
+
+	if err := p.process(); err != nil {
+		return &Path{}, err
+	}
+
+	return p, nil
+}
+
+func (p *Path) validate() error {
+	if p.name == "" {
+		return &ErrEmptyName{}
+	}
+
+	return nil
+}
+
+func (p *Path) process() error {
+	if err := p.validate(); err != nil {
+		return err
+	}
+
+	elements := strings.Split(p.name, "/")
+	if len(elements) == 1 {
+		p.filename = fmt.Sprintf("%s-latest", elements[0])
+		p.uri = fmt.Sprintf("/%s", p.filename)
+		return nil
+	}
+
+	p.filename = fmt.Sprintf("%s-latest", elements[len(elements)-1])
+	p.uri = fmt.Sprintf("/%s/%s", strings.Join(elements[0:len(elements)-1], "/"), p.filename)
+
+	return nil
 }
 
 type Geofabrik struct {
 	*rip.Client
-}
-
-func tokenizePath(elements []string) string {
-	if len(elements) == 1 {
-		return fmt.Sprintf("/%s-latest", elements[0])
-	}
-
-	file := elements[len(elements)-1]
-	path := strings.Join(elements[0:len(elements)-1], "/")
-
-	return fmt.Sprintf("/%s/%s-latest", path, file)
 }
 
 func New(host string, options ...rip.Option) (*Geofabrik, error) {
@@ -47,14 +77,13 @@ func New(host string, options ...rip.Option) (*Geofabrik, error) {
 }
 
 func (g *Geofabrik) LatestMD5(name string) (string, error) {
-	elements := strings.Split(name, "/")
-	path := tokenizePath(elements)
-	req := g.NR().SetHeader("Accept", "text/plain; charset=utf-8")
-	if path == "" {
-		return "", &ErrMissingName{}
+	p, err := newPath(name)
+	if err != nil {
+		return "", err
 	}
 
-	res, err := req.Execute("GET", fmt.Sprintf("%s.%s", path, md5type))
+	req := g.NR().SetHeader("Accept", "text/plain; charset=utf-8")
+	res, err := req.Execute("GET", fmt.Sprintf("%s.%s", p.uri, md5type))
 	if err != nil {
 		return "", err
 	}
@@ -66,23 +95,21 @@ func (g *Geofabrik) LatestMD5(name string) (string, error) {
 }
 
 func (g *Geofabrik) SimpleDownload(name string, outpath string) error {
-	elements := strings.Split(name, "/")
-	path := tokenizePath(elements)
-	if path == "" {
-		return &ErrMissingName{}
+	p, err := newPath(name)
+	if err != nil {
+		return err
 	}
 
-	file := elements[len(elements)-1]
-	filepath := fmt.Sprintf("%s/%s-latest%s", outpath, file, pbftype)
+	filepath := fmt.Sprintf("%s/%s%s", outpath, p.filename, pbftype)
 	// TODO: sanitize outpath
 	out, err := os.Create(filepath)
 	if err != nil {
-		return fmt.Errorf("could not create out file %s%s%s: %s", outpath, path, pbftype, err.Error())
+		return fmt.Errorf("could not create out file %s: %s", filepath, err.Error())
 	}
 	defer out.Close()
 
 	req := g.NR().SetHeader("Accept", "application/octet-stream")
-	res, err := req.Execute("GET", fmt.Sprintf("%s%s", path, pbftype))
+	res, err := req.Execute("GET", fmt.Sprintf("%s%s", p.uri, pbftype))
 	if err != nil {
 		return err
 	}
