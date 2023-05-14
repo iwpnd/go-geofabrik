@@ -1,4 +1,4 @@
-package client
+package geofabrik
 
 import (
 	"bytes"
@@ -150,7 +150,7 @@ func TestGetMD5(t *testing.T) {
 	teardown := setupTestServer(nil)
 	defer teardown()
 
-	g, err := New(ts.URL)
+	g, err := New(ts.URL, false)
 	if err != nil {
 		t.Fatal("could not initialize client")
 	}
@@ -198,7 +198,7 @@ func TestSimpleDownload(t *testing.T) {
 	teardown := setupTestServer(responseFile)
 	defer teardown()
 
-	g, err := New(ts.URL)
+	g, err := New(ts.URL, false)
 	if err != nil {
 		t.Fatal("could not initialize client")
 	}

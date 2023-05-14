@@ -28,16 +28,23 @@ func latestMD5(ctx *cli.Context) error {
 
 func simpleDownload(ctx *cli.Context) error {
 	name := ctx.Args().First()
+
+	fmt.Printf("downloading '%s' \n\n", name)
 	err := g.SimpleDownload(name, ".")
 	if err != nil {
 		return err
 	}
+	fmt.Printf("\n\nfinished downloading '%s'", name)
 
-	fmt.Println("download successful")
 	return nil
 }
+
 func init() {
-	g, err = geofabrik.New("https://download.geofabrik.de", rip.WithTimeout(0))
+	g, err = geofabrik.New(
+		"https://download.geofabrik.de",
+		true,
+		rip.WithTimeout(0),
+	)
 	if err != nil {
 		panic("could not init geofabrik client")
 	}
