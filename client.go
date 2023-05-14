@@ -60,12 +60,19 @@ func (g *Geofabrik) LatestMD5(name string) (string, error) {
 	)
 	res, err := req.Execute(
 		"GET",
-		fmt.Sprintf("%s.%s", p.uri, md5type),
+		fmt.Sprintf("%s%s", p.uri, md5type),
 	)
 	if err != nil {
 		return "", err
 	}
 	defer res.Close()
+
+	if !res.IsSuccess() {
+		return "", fmt.Errorf(
+			"download unsuccessful: %v",
+			res.StatusCode(),
+		)
+	}
 
 	md5 := strings.Split(res.String(), "  ")[0]
 
