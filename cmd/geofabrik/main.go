@@ -13,7 +13,11 @@ import (
 var g *geofabrik.Geofabrik
 var err error
 var latestMD5Command cli.Command
-var simpleDownloadCommand cli.Command
+var downloadCommand cli.Command
+var downloadIfChangedCommand cli.Command
+
+var md5Flag cli.StringFlag
+var outputPathFlag cli.StringFlag
 
 func latestMD5(ctx *cli.Context) error {
 	name := ctx.Args().First()
@@ -26,15 +30,47 @@ func latestMD5(ctx *cli.Context) error {
 	return nil
 }
 
-func simpleDownload(ctx *cli.Context) error {
+func downloadIfChanged(ctx *cli.Context) error {
 	name := ctx.Args().First()
 
-	fmt.Printf("downloading '%s' \n\n", name)
-	err := g.Download(name, ".")
+	latestMD5, err := g.LatestMD5(name)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("\n\nfinished downloading '%s'", name)
+	md5 := ctx.String("md5")
+	if md5 == latestMD5 {
+		fmt.Printf(
+			"%s is up to date, no download required (latest md5: %s, input md5: %s)\n\n",
+			name,
+			latestMD5,
+			md5,
+		)
+		return nil
+	}
+
+	outputPath := ctx.String("outputPath")
+
+	fmt.Printf("downloading %s (%s) \n\n", name, latestMD5)
+	err = g.Download(name, outputPath)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("\n\nfinished downloading %s (%s)", name, latestMD5)
+
+	return nil
+}
+
+func download(ctx *cli.Context) error {
+	name := ctx.Args().First()
+
+	outputPath := ctx.String("outputPath")
+
+	fmt.Printf("downloading %s \n\n", name)
+	err = g.Download(name, outputPath)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("\n\nfinished downloading %s", name)
 
 	return nil
 }
@@ -48,15 +84,38 @@ func init() {
 		panic("could not init geofabrik client")
 	}
 
+	md5Flag = cli.StringFlag{
+		Name:     "md5",
+		Required: true,
+		Usage:    "md5 to compare",
+	}
+	outputPathFlag = cli.StringFlag{
+		Name:     "outputPath",
+		Required: true,
+		Usage:    "path to store dataset",
+	}
+
 	latestMD5Command = cli.Command{
 		Name:   "md5",
 		Usage:  "get latest md5 of geofabrik dataset",
 		Action: latestMD5,
 	}
-	simpleDownloadCommand = cli.Command{
+	downloadCommand = cli.Command{
 		Name:   "download",
 		Usage:  "download dataset to outputpath",
-		Action: simpleDownload,
+		Action: download,
+		Flags: []cli.Flag{
+			&outputPathFlag,
+		},
+	}
+	downloadIfChangedCommand = cli.Command{
+		Name:   "download-if-changed",
+		Usage:  "download dataset to outputpath if md5 changed",
+		Action: downloadIfChanged,
+		Flags: []cli.Flag{
+			&md5Flag,
+			&outputPathFlag,
+		},
 	}
 }
 
@@ -66,7 +125,8 @@ func main() {
 		Usage: "geofabrik",
 		Commands: []*cli.Command{
 			&latestMD5Command,
-			&simpleDownloadCommand,
+			&downloadCommand,
+			&downloadIfChangedCommand,
 		},
 	}
 
