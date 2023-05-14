@@ -40,9 +40,8 @@ func simpleDownload(ctx *cli.Context) error {
 }
 
 func init() {
-	g, err = geofabrik.New(
+	g, err = geofabrik.NewWithProgress(
 		"https://download.geofabrik.de",
-		true,
 		rip.WithTimeout(0),
 	)
 	if err != nil {

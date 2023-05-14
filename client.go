@@ -30,9 +30,23 @@ func New(host string, withProgress bool, options ...rip.Option) (*Geofabrik, err
 
 	return &Geofabrik{
 		Client:       c,
-		withProgress: withProgress,
+		withProgress: false,
+		progress:     nil,
+	}, nil
+}
+
+func NewWithProgress(host string, options ...rip.Option) (*Geofabrik, error) {
+	c, err := rip.NewClient(host, options...)
+	if err != nil {
+		return &Geofabrik{}, err
+	}
+
+	return &Geofabrik{
+		Client:       c,
+		withProgress: true,
 		progress:     &Progress{},
 	}, nil
+
 }
 
 func (g *Geofabrik) LatestMD5(name string) (string, error) {
