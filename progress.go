@@ -7,10 +7,8 @@ type Progress struct {
 	totalBytes    int64
 }
 
-func NewProgress(totalBytes int64) *Progress {
-	return &Progress{
-		totalBytes: totalBytes,
-	}
+func newProgress() *Progress {
+	return &Progress{}
 }
 
 func (p *Progress) reset() {

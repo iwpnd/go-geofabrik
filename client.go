@@ -44,9 +44,8 @@ func NewWithProgress(host string, options ...rip.Option) (*Geofabrik, error) {
 	return &Geofabrik{
 		Client:       c,
 		withProgress: true,
-		progress:     &Progress{},
+		progress:     newProgress(),
 	}, nil
-
 }
 
 func (g *Geofabrik) LatestMD5(name string) (string, error) {
