@@ -5,12 +5,6 @@ import (
 	"strings"
 )
 
-type ErrEmptyName struct{}
-
-func (e *ErrEmptyName) Error() string {
-	return "name is empty"
-}
-
 type Path struct {
 	name     string
 	uri      string

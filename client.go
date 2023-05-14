@@ -62,17 +62,13 @@ func (g *Geofabrik) LatestMD5(name string) (string, error) {
 		"GET",
 		fmt.Sprintf("%s%s", p.uri, md5type),
 	)
-	if err != nil {
-		return "", err
+	if err != nil || !res.IsSuccess() {
+		return "", &ErrDownloadFailed{
+			msg:  err.Error(),
+			code: res.StatusCode(),
+		}
 	}
 	defer res.Close()
-
-	if !res.IsSuccess() {
-		return "", fmt.Errorf(
-			"download unsuccessful: %v",
-			res.StatusCode(),
-		)
-	}
 
 	md5 := strings.Split(res.String(), "  ")[0]
 
@@ -111,17 +107,13 @@ func (g *Geofabrik) Download(name string, outpath string) error {
 		"GET",
 		fmt.Sprintf("%s%s", p.uri, pbftype),
 	)
-	if err != nil {
-		return err
+	if err != nil || !res.IsSuccess() {
+		return &ErrDownloadFailed{
+			msg:  err.Error(),
+			code: res.StatusCode(),
+		}
 	}
 	defer res.Close()
-
-	if !res.IsSuccess() {
-		return fmt.Errorf(
-			"download unsuccessful: %v",
-			res.StatusCode(),
-		)
-	}
 
 	if g.withProgress {
 		g.progress.reset()
@@ -130,14 +122,20 @@ func (g *Geofabrik) Download(name string, outpath string) error {
 		mr := io.MultiWriter(out, g.progress)
 		_, err := io.Copy(mr, res.RawResponse.Body)
 		if err != nil {
-			return fmt.Errorf("failed to save file: %v", err.Error())
+			return &ErrCreateFile{
+				msg: err.Error(),
+			}
 		}
 		return nil
 	}
 
 	_, err = io.Copy(out, res.RawBody())
 	if err != nil {
-		return fmt.Errorf("failed to save file: %v", err.Error())
+		if err != nil {
+			return &ErrCopyFailed{
+				msg: err.Error(),
+			}
+		}
 	}
 
 	return nil

@@ -142,7 +142,7 @@ func TestGetMD5(t *testing.T) {
 	}
 }
 
-func TestSimpleDownload(t *testing.T) {
+func TestDownload(t *testing.T) {
 	dir, err := os.MkdirTemp(".", "tmp")
 	if err != nil {
 		t.Fatalf("error creating temp directory: %s", err)
@@ -160,7 +160,7 @@ func TestSimpleDownload(t *testing.T) {
 
 	err = g.Download("foo", dir)
 	if err != nil {
-		t.Fatalf("failed to download: %v", err.Error())
+		t.Fatal(err.Error())
 	}
 
 	testfile := "foo-latest.osm.pbf"
