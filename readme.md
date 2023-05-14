@@ -11,7 +11,7 @@ go install github.com/iwpnd/go-geofabrik/cmd/geofabrik@latest
 ```
 
 ```bash
-➜ go run main.go
+➜ geofabrik --help
 NAME:
    geofabrik - geofabrik
 
@@ -19,9 +19,10 @@ USAGE:
    geofabrik [global options] command [command options] [arguments...]
 
 COMMANDS:
-   md5      get latest md5 of geofabrik dataset
-   download download dataset (e.g. "europe/germany/berlin")
-   help, h  Shows a list of commands or help for one command
+   md5                  get latest md5 of geofabrik dataset
+   download             download dataset to outputpath
+   download-if-changed  download dataset to outputpath if md5 changed
+   help, h              Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
    --help, -h  show help
@@ -32,6 +33,8 @@ GLOBAL OPTIONS:
 MIT
 
 ## Acknowledgement
+
+awesome folks at [Geofabrik](https://geofabrik.de)
 
 ## Maintainer
 
