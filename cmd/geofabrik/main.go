@@ -30,7 +30,7 @@ func simpleDownload(ctx *cli.Context) error {
 	name := ctx.Args().First()
 
 	fmt.Printf("downloading '%s' \n\n", name)
-	err := g.SimpleDownload(name, ".")
+	err := g.Download(name, ".")
 	if err != nil {
 		return err
 	}

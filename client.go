@@ -72,7 +72,7 @@ func (g *Geofabrik) LatestMD5(name string) (string, error) {
 	return md5, nil
 }
 
-func (g *Geofabrik) SimpleDownload(name string, outpath string) error {
+func (g *Geofabrik) Download(name string, outpath string) error {
 	p, err := newPath(name)
 	if err != nil {
 		return err

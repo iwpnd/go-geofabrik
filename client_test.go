@@ -158,7 +158,7 @@ func TestSimpleDownload(t *testing.T) {
 		t.Fatal("could not initialize client")
 	}
 
-	err = g.SimpleDownload("foo", dir)
+	err = g.Download("foo", dir)
 	if err != nil {
 		t.Fatalf("failed to download: %v", err.Error())
 	}
