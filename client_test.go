@@ -3,6 +3,7 @@ package geofabrik
 import (
 	"bytes"
 	"crypto/md5"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -90,7 +91,6 @@ func setupTestServer(responseData []byte) func() {
 						}
 					}
 				default:
-					w.Header().Set("Content-Type", "application/json")
 					w.WriteHeader(http.StatusNotFound)
 				}
 			}
@@ -171,4 +171,59 @@ func TestDownload(t *testing.T) {
 		t.Fatalf("could not open test file: %s/%s", dir, testfile)
 	}
 	assert.Equal(t, true, compareHash(t, responseFile, got))
+}
+
+func TestDownloadFailed(t *testing.T) {
+	teardown := setupTestServer(nil)
+	defer teardown()
+
+	g, err := New(ts.URL, false)
+	if err != nil {
+		t.Fatal("could not initialize client")
+	}
+	dir, err := os.MkdirTemp(".", "tmp")
+	if err != nil {
+		t.Fatalf("error creating temp directory: %s", err)
+	}
+	defer os.RemoveAll(dir)
+
+	err = g.Download("bar", dir)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	if err != nil {
+		var got ErrDownloadFailed
+		isErrDownloadFailed := errors.As(err, &got)
+		want := ErrDownloadFailed{URL: ts.URL + "/bar-latest.osm.pbf", Code: http.StatusNotFound}
+
+		assert.Equal(t, true, isErrDownloadFailed)
+		assert.Equal(t, want, got)
+	}
+}
+
+func TestCreateFileFailed(t *testing.T) {
+	teardown := setupTestServer(nil)
+	defer teardown()
+
+	g, err := New(ts.URL, false)
+	if err != nil {
+		t.Fatal("could not initialize client")
+	}
+
+	err = g.Download("bar", "bla")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	if err != nil {
+		var got ErrCreateFile
+		isErrCreateFile := errors.As(err, &got)
+		want := ErrCreateFile{
+			Message: "open bla/bar-latest.osm.pbf: no such file or directory",
+		}
+
+		assert.Equal(t, true, isErrCreateFile)
+		assert.Equal(t, want, got)
+	}
 }

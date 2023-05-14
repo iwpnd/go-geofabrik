@@ -63,9 +63,9 @@ func (g *Geofabrik) LatestMD5(name string) (string, error) {
 		fmt.Sprintf("%s%s", p.uri, md5type),
 	)
 	if err != nil || !res.IsSuccess() {
-		return "", &ErrDownloadFailed{
-			msg:  err.Error(),
-			code: res.StatusCode(),
+		return "", ErrDownloadFailed{
+			Message: err.Error(),
+			Code:    res.StatusCode(),
 		}
 	}
 	defer res.Close()
@@ -91,11 +91,7 @@ func (g *Geofabrik) Download(name string, outpath string) error {
 	// TODO: sanitize outpath
 	out, err := os.Create(filepath)
 	if err != nil {
-		return fmt.Errorf(
-			"could not create out file %s: %s",
-			filepath,
-			err.Error(),
-		)
+		return ErrCreateFile{Message: err.Error()}
 	}
 	defer out.Close()
 
@@ -107,13 +103,21 @@ func (g *Geofabrik) Download(name string, outpath string) error {
 		"GET",
 		fmt.Sprintf("%s%s", p.uri, pbftype),
 	)
-	if err != nil || !res.IsSuccess() {
-		return &ErrDownloadFailed{
-			msg:  err.Error(),
-			code: res.StatusCode(),
+	if err != nil {
+		return ErrDownloadFailed{
+			Message: err.Error(),
+			Code:    res.StatusCode(),
+			URL:     res.Request.URL,
 		}
 	}
 	defer res.Close()
+
+	if res.StatusCode() >= 400 {
+		return ErrDownloadFailed{
+			Code: res.StatusCode(),
+			URL:  res.Request.URL,
+		}
+	}
 
 	if g.withProgress {
 		g.progress.reset()
@@ -122,8 +126,8 @@ func (g *Geofabrik) Download(name string, outpath string) error {
 		mr := io.MultiWriter(out, g.progress)
 		_, err := io.Copy(mr, res.RawResponse.Body)
 		if err != nil {
-			return &ErrCreateFile{
-				msg: err.Error(),
+			return ErrCreateFile{
+				Message: err.Error(),
 			}
 		}
 		return nil
@@ -132,8 +136,8 @@ func (g *Geofabrik) Download(name string, outpath string) error {
 	_, err = io.Copy(out, res.RawBody())
 	if err != nil {
 		if err != nil {
-			return &ErrCopyFailed{
-				msg: err.Error(),
+			return ErrCopyFailed{
+				Message: err.Error(),
 			}
 		}
 	}
