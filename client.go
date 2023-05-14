@@ -62,10 +62,18 @@ func (g *Geofabrik) LatestMD5(name string) (string, error) {
 		"GET",
 		fmt.Sprintf("%s%s", p.uri, md5type),
 	)
-	if err != nil || !res.IsSuccess() {
+	if err != nil {
 		return "", ErrDownloadFailed{
 			Message: err.Error(),
 			Code:    res.StatusCode(),
+			URL:     res.Request.URL,
+		}
+	}
+
+	if res.StatusCode() >= 400 {
+		return "", ErrDownloadFailed{
+			Code: res.StatusCode(),
+			URL:  res.Request.URL,
 		}
 	}
 	defer res.Close()
