@@ -120,7 +120,7 @@ func (g *Geofabrik) Download(name string, outpath string) error {
 	}
 	defer res.Close()
 
-	if res.StatusCode() >= 400 {
+	if res.IsError() {
 		return ErrDownloadFailed{
 			Code: res.StatusCode(),
 			URL:  res.Request.URL,
@@ -132,7 +132,7 @@ func (g *Geofabrik) Download(name string, outpath string) error {
 		g.progress.setTotalByte(res.ContentLength())
 
 		mr := io.MultiWriter(out, g.progress)
-		_, err := io.Copy(mr, res.RawResponse.Body)
+		_, err := io.Copy(mr, res.RawBody())
 		if err != nil {
 			return ErrCreateFile{
 				Message: err.Error(),
