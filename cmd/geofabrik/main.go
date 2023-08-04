@@ -77,7 +77,7 @@ func download(ctx *cli.Context) error {
 
 func init() {
 	g, err = geofabrik.NewWithProgress(
-		"https://download.geofabrik.de",
+		"http://download.geofabrik.de",
 		rip.WithTimeout(0),
 	)
 	if err != nil {
