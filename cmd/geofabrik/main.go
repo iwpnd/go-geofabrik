@@ -21,7 +21,7 @@ var outputPathFlag cli.StringFlag
 
 func latestMD5(ctx *cli.Context) error {
 	name := ctx.Args().First()
-	md5, err := g.LatestMD5(name)
+	md5, err := g.MD5(name)
 	if err != nil {
 		return err
 	}
@@ -33,7 +33,7 @@ func latestMD5(ctx *cli.Context) error {
 func downloadIfChanged(ctx *cli.Context) error {
 	name := ctx.Args().First()
 
-	latestMD5, err := g.LatestMD5(name)
+	latestMD5, err := g.MD5(name)
 	if err != nil {
 		return err
 	}

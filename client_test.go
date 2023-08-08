@@ -117,7 +117,7 @@ func TestGetMD5(t *testing.T) {
 
 	fn := func(tc tcase) func(t *testing.T) {
 		return func(t *testing.T) {
-			got, err := g.LatestMD5("foo")
+			got, err := g.MD5("foo")
 			if err != nil {
 				t.Fatal("failed to get md5")
 			}

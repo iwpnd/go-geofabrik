@@ -48,7 +48,7 @@ func NewWithProgress(host string, options ...rip.Option) (*Geofabrik, error) {
 	}, nil
 }
 
-func (g *Geofabrik) LatestMD5(name string) (string, error) {
+func (g *Geofabrik) MD5(name string) (string, error) {
 	p, err := newPath(name)
 	if err != nil {
 		return "", err
