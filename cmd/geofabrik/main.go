@@ -13,6 +13,7 @@ import (
 var g *geofabrik.Geofabrik
 var err error
 var latestMD5Command cli.Command
+var polygonCommand cli.Command
 var downloadCommand cli.Command
 var downloadIfChangedCommand cli.Command
 
@@ -27,6 +28,21 @@ func latestMD5(ctx *cli.Context) error {
 	}
 
 	fmt.Println(md5)
+	return nil
+}
+
+func polygon(ctx *cli.Context) error {
+	name := ctx.Args().First()
+	polygon, err := g.Polygon(name)
+	if err != nil {
+		return err
+	}
+	f, err := polygon.ToFeature()
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(f)
 	return nil
 }
 
@@ -100,6 +116,11 @@ func init() {
 		Usage:  "get latest md5 of geofabrik dataset",
 		Action: latestMD5,
 	}
+	polygonCommand = cli.Command{
+		Name:   "polygon",
+		Usage:  "get extent of dataset as geojson feature",
+		Action: polygon,
+	}
 	downloadCommand = cli.Command{
 		Name:   "download",
 		Usage:  "download dataset to outputpath",
@@ -125,6 +146,7 @@ func main() {
 		Usage: "geofabrik",
 		Commands: []*cli.Command{
 			&latestMD5Command,
+			&polygonCommand,
 			&downloadCommand,
 			&downloadIfChangedCommand,
 		},
