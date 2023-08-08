@@ -20,6 +20,7 @@ USAGE:
 
 COMMANDS:
    md5                  get latest md5 of geofabrik dataset
+   polygon              get extent of dataset as geojson feature
    download             download dataset to outputpath
    download-if-changed  download dataset to outputpath if md5 changed
    help, h              Shows a list of commands or help for one command
