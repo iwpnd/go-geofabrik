@@ -133,7 +133,7 @@ func TestGetPolygon(t *testing.T) {
 		"polygon": {
 			name:     "foo",
 			input:    []byte("test\ntest\n   0   0 \n   1   0\n   1   1\n   0   1\n   0   0\nEND\nEND"),
-			expected: `{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[0,0],[1,0],[1,1],[0,1],[0,0]]]},"properties":{"name":"test"}}`,
+			expected: `{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[0,0],[1,0],[1,1],[0,1],[0,0]]]},"properties":{"name":"foo"}}`,
 		},
 	}
 
@@ -141,10 +141,9 @@ func TestGetPolygon(t *testing.T) {
 		return func(t *testing.T) {
 			p, err := g.Polygon(tc.name)
 			if err != nil {
-				t.Fatal("failed to get polygon")
+				t.Fatal("failed to get polygon", err)
 			}
-			properties := map[string]interface{}{"name": tc.name}
-			got, err := p.ToFeature(properties)
+			got, err := p.ToFeature()
 			if err != nil {
 				t.Fatal("failed to build feature", err)
 			}
@@ -153,8 +152,8 @@ func TestGetPolygon(t *testing.T) {
 		}
 	}
 
-	for _, test := range tests {
-		fn(test)
+	for name, tc := range tests {
+		t.Run(name, fn(tc))
 	}
 }
 
@@ -174,8 +173,8 @@ func TestGetMD5(t *testing.T) {
 
 	fn := func(tc tcase) func(t *testing.T) {
 		return func(t *testing.T) {
-			got, err := g.MD5("foo")
-			if err != nil {
+			got, err := g.MD5(tc.name)
+			if err != nil && tc.expected != "" {
 				t.Fatal("failed to get md5")
 			}
 
@@ -194,8 +193,8 @@ func TestGetMD5(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		fn(test)
+	for name, tc := range tests {
+		t.Run(name, fn(tc))
 	}
 }
 
