@@ -107,5 +107,4 @@ func (p *Polygon) ToFeature(properties map[string]interface{}) (string, error) {
 	feature = feature + `}`
 
 	return feature, nil
-
 }

@@ -9,6 +9,7 @@ import (
 func TestTokenizePath(t *testing.T) {
 	type tcase struct {
 		input            string
+		ftype            FileType
 		expectedUri      string
 		expectedFileName string
 	}
@@ -16,33 +17,38 @@ func TestTokenizePath(t *testing.T) {
 	tests := map[string]tcase{
 		"should tokenize one level": {
 			input:            "europe",
-			expectedUri:      "/europe-latest",
-			expectedFileName: "europe-latest",
+			ftype:            pbftype,
+			expectedUri:      "/europe-latest.osm.pbf",
+			expectedFileName: "europe-latest.osm.pbf",
 		},
 		"should tokenize two levels": {
 			input:            "europe/germany",
-			expectedUri:      "/europe/germany-latest",
-			expectedFileName: "germany-latest",
+			ftype:            pbftype,
+			expectedUri:      "/europe/germany-latest.osm.pbf",
+			expectedFileName: "germany-latest.osm.pbf",
 		},
 		"should tokenize three levels": {
 			input:            "europe/germany/berlin",
-			expectedUri:      "/europe/germany/berlin-latest",
-			expectedFileName: "berlin-latest",
+			ftype:            pbftype,
+			expectedUri:      "/europe/germany/berlin-latest.osm.pbf",
+			expectedFileName: "berlin-latest.osm.pbf",
 		},
 		"should persist other seperators": {
 			input:            "europe/ireland-and-northern-ireland",
-			expectedUri:      "/europe/ireland-and-northern-ireland-latest",
-			expectedFileName: "ireland-and-northern-ireland-latest",
+			ftype:            pbftype,
+			expectedUri:      "/europe/ireland-and-northern-ireland-latest.osm.pbf",
+			expectedFileName: "ireland-and-northern-ireland-latest.osm.pbf",
 		},
 		"should sanitize input": {
 			input:            "/europe/",
-			expectedUri:      "/europe-latest",
-			expectedFileName: "europe-latest",
+			ftype:            pbftype,
+			expectedUri:      "/europe-latest.osm.pbf",
+			expectedFileName: "europe-latest.osm.pbf",
 		},
 	}
 
 	for _, test := range tests {
-		p, err := newPath(test.input)
+		p, err := newPath(test.input, test.ftype)
 		if err != nil {
 			t.Fatalf("failed to create valid path: %v", err.Error())
 		}

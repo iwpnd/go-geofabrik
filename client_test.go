@@ -61,6 +61,19 @@ func setupTestServer(responseData []byte) func() {
 							fmt.Fprint(w, "nope")
 						}
 					}
+				case "/foo.poly":
+					{
+						accept := r.Header.Get("Accept")
+						switch accept {
+						case "text/plain; charset=utf-8":
+							w.WriteHeader(http.StatusOK)
+							w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+							fmt.Fprint(w, "test\ntest\n   0   0 \n   1   0\n   1   1\n   0   1\n   0   0\nEND\nEND")
+						default:
+							w.WriteHeader(http.StatusNotAcceptable)
+							fmt.Fprint(w, "nope")
+						}
+					}
 				case "/foo-latest.osm.pbf":
 					{
 						accept := r.Header.Get("Accept")
@@ -98,6 +111,50 @@ func setupTestServer(responseData []byte) func() {
 
 	return func() {
 		ts.Close()
+	}
+}
+
+func TestGetPolygon(t *testing.T) {
+	teardown := setupTestServer(nil)
+	defer teardown()
+
+	g, err := New(ts.URL, false)
+	if err != nil {
+		t.Fatal("could not initialize client")
+	}
+
+	type tcase struct {
+		name     string
+		input    []byte
+		expected string
+	}
+
+	tests := map[string]tcase{
+		"polygon": {
+			name:     "foo",
+			input:    []byte("test\ntest\n   0   0 \n   1   0\n   1   1\n   0   1\n   0   0\nEND\nEND"),
+			expected: `{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[0,0],[1,0],[1,1],[0,1],[0,0]]]},"properties":{"name":"test"}}`,
+		},
+	}
+
+	fn := func(tc tcase) func(t *testing.T) {
+		return func(t *testing.T) {
+			p, err := g.Polygon(tc.name)
+			if err != nil {
+				t.Fatal("failed to get polygon")
+			}
+			properties := map[string]interface{}{"name": tc.name}
+			got, err := p.ToFeature(properties)
+			if err != nil {
+				t.Fatal("failed to build feature", err)
+			}
+
+			assert.Equal(t, tc.expected, got)
+		}
+	}
+
+	for _, test := range tests {
+		fn(test)
 	}
 }
 

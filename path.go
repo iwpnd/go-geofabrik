@@ -11,10 +11,10 @@ type Path struct {
 	filename string
 }
 
-func newPath(name string) (*Path, error) {
+func newPath(name string, ftype FileType) (*Path, error) {
 	p := &Path{name: name}
 
-	if err := p.process(); err != nil {
+	if err := p.process(ftype); err != nil {
 		return &Path{}, err
 	}
 
@@ -29,7 +29,7 @@ func (p *Path) validate() error {
 	return nil
 }
 
-func (p *Path) process() error {
+func (p *Path) process(ftype FileType) error {
 	if err := p.validate(); err != nil {
 		return err
 	}
@@ -40,14 +40,15 @@ func (p *Path) process() error {
 
 	elements := strings.Split(p.name, "/")
 	if len(elements) == 1 {
-		p.filename = fmt.Sprintf("%s-latest", elements[0])
+		p.filename = fmt.Sprintf("%s-latest%s", elements[0], ftype)
 		p.uri = fmt.Sprintf("/%s", p.filename)
 		return nil
 	}
 
 	p.filename = fmt.Sprintf(
-		"%s-latest",
+		"%s-latest%s",
 		elements[len(elements)-1],
+		ftype,
 	)
 	p.uri = fmt.Sprintf(
 		"/%s/%s",
