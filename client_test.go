@@ -2,6 +2,7 @@ package geofabrik
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"errors"
 	"fmt"
@@ -137,9 +138,11 @@ func TestGetPolygon(t *testing.T) {
 		},
 	}
 
+	ctx := context.Background()
+
 	fn := func(tc tcase) func(t *testing.T) {
 		return func(t *testing.T) {
-			p, err := g.Polygon(tc.name)
+			p, err := g.Polygon(ctx, tc.name)
 			if err != nil {
 				t.Fatal("failed to get polygon", err)
 			}
@@ -166,6 +169,8 @@ func TestGetMD5(t *testing.T) {
 		t.Fatal("could not initialize client")
 	}
 
+	ctx := context.Background()
+
 	type tcase struct {
 		name     string
 		expected string
@@ -173,7 +178,7 @@ func TestGetMD5(t *testing.T) {
 
 	fn := func(tc tcase) func(t *testing.T) {
 		return func(t *testing.T) {
-			got, err := g.MD5(tc.name)
+			got, err := g.MD5(ctx, tc.name)
 			if err != nil && tc.expected != "" {
 				t.Fatal("failed to get md5")
 			}
@@ -209,12 +214,14 @@ func TestDownload(t *testing.T) {
 	teardown := setupTestServer(responseFile)
 	defer teardown()
 
+	ctx := context.Background()
+
 	g, err := New(ts.URL, false)
 	if err != nil {
 		t.Fatal("could not initialize client")
 	}
 
-	err = g.Download("foo", dir)
+	err = g.Download(ctx, "foo", dir)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -243,7 +250,9 @@ func TestDownloadFailed(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	err = g.Download("bar", dir)
+	ctx := context.Background()
+
+	err = g.Download(ctx, "bar", dir)
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -266,8 +275,9 @@ func TestCreateFileFailed(t *testing.T) {
 	if err != nil {
 		t.Fatal("could not initialize client")
 	}
+	ctx := context.Background()
 
-	err = g.Download("bar", "bla")
+	err = g.Download(ctx, "bar", "bla")
 	if err == nil {
 		t.Fatal("expected error")
 	}

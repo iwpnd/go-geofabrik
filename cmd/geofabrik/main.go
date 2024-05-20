@@ -22,7 +22,7 @@ var outputPathFlag cli.StringFlag
 
 func latestMD5(ctx *cli.Context) error {
 	name := ctx.Args().First()
-	md5, err := g.MD5(name)
+	md5, err := g.MD5(ctx.Context, name)
 	if err != nil {
 		return err
 	}
@@ -33,7 +33,7 @@ func latestMD5(ctx *cli.Context) error {
 
 func polygon(ctx *cli.Context) error {
 	name := ctx.Args().First()
-	polygon, err := g.Polygon(name)
+	polygon, err := g.Polygon(ctx.Context, name)
 	if err != nil {
 		return err
 	}
@@ -49,7 +49,7 @@ func polygon(ctx *cli.Context) error {
 func downloadIfChanged(ctx *cli.Context) error {
 	name := ctx.Args().First()
 
-	latestMD5, err := g.MD5(name)
+	latestMD5, err := g.MD5(ctx.Context, name)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func downloadIfChanged(ctx *cli.Context) error {
 	outputPath := ctx.String("outputPath")
 
 	fmt.Printf("downloading %s (%s) \n\n", name, latestMD5)
-	err = g.Download(name, outputPath)
+	err = g.Download(ctx.Context, name, outputPath)
 	if err != nil {
 		return err
 	}
@@ -82,7 +82,7 @@ func download(ctx *cli.Context) error {
 	outputPath := ctx.String("outputPath")
 
 	fmt.Printf("downloading %s \n\n", name)
-	err = g.Download(name, outputPath)
+	err = g.Download(ctx.Context, name, outputPath)
 	if err != nil {
 		return err
 	}

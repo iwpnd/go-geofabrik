@@ -1,6 +1,7 @@
 package geofabrik
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -53,7 +54,7 @@ func NewWithProgress(host string, options ...rip.Option) (*Geofabrik, error) {
 }
 
 // MD5 will return the latest MD5 of a dataset
-func (g *Geofabrik) MD5(name string) (string, error) {
+func (g *Geofabrik) MD5(ctx context.Context, name string) (string, error) {
 	p, err := newPath(name, md5type)
 	if err != nil {
 		return "", err
@@ -64,6 +65,7 @@ func (g *Geofabrik) MD5(name string) (string, error) {
 		"text/plain; charset=utf-8",
 	)
 	res, err := req.Execute(
+		ctx,
 		"GET",
 		p.uri,
 	)
@@ -88,7 +90,7 @@ func (g *Geofabrik) MD5(name string) (string, error) {
 	return md5, nil
 }
 
-func (g *Geofabrik) Polygon(name string) (*Polygon, error) {
+func (g *Geofabrik) Polygon(ctx context.Context, name string) (*Polygon, error) {
 	p, err := newPath(name, polytype)
 	if err != nil {
 		return &Polygon{}, err
@@ -99,6 +101,7 @@ func (g *Geofabrik) Polygon(name string) (*Polygon, error) {
 		"text/plain; charset=utf-8",
 	)
 	res, err := req.Execute(
+		ctx,
 		"GET",
 		p.uri,
 	)
@@ -129,7 +132,7 @@ func (g *Geofabrik) Polygon(name string) (*Polygon, error) {
 }
 
 // Download a dataset to output path
-func (g *Geofabrik) Download(name string, outpath string) error {
+func (g *Geofabrik) Download(ctx context.Context, name string, outpath string) error {
 	p, err := newPath(name, pbftype)
 	if err != nil {
 		return err
@@ -153,6 +156,7 @@ func (g *Geofabrik) Download(name string, outpath string) error {
 		"application/octet-stream",
 	)
 	res, err := req.Execute(
+		ctx,
 		"GET",
 		p.uri,
 	)
