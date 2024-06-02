@@ -26,7 +26,7 @@ type Geofabrik struct {
 }
 
 // New ...
-func New(host string, withProgress bool, options ...rip.Option) (*Geofabrik, error) {
+func New(host string, options ...rip.Option) (*Geofabrik, error) {
 	c, err := rip.NewClient(host, options...)
 	if err != nil {
 		return &Geofabrik{}, err

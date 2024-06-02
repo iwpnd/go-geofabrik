@@ -119,7 +119,7 @@ func TestGetPolygon(t *testing.T) {
 	teardown := setupTestServer(nil)
 	defer teardown()
 
-	g, err := New(ts.URL, false)
+	g, err := New(ts.URL)
 	if err != nil {
 		t.Fatal("could not initialize client")
 	}
@@ -164,7 +164,7 @@ func TestGetMD5(t *testing.T) {
 	teardown := setupTestServer(nil)
 	defer teardown()
 
-	g, err := New(ts.URL, false)
+	g, err := New(ts.URL)
 	if err != nil {
 		t.Fatal("could not initialize client")
 	}
@@ -216,7 +216,7 @@ func TestDownload(t *testing.T) {
 
 	ctx := context.Background()
 
-	g, err := New(ts.URL, false)
+	g, err := New(ts.URL)
 	if err != nil {
 		t.Fatal("could not initialize client")
 	}
@@ -240,7 +240,7 @@ func TestDownloadFailed(t *testing.T) {
 	teardown := setupTestServer(nil)
 	defer teardown()
 
-	g, err := New(ts.URL, false)
+	g, err := New(ts.URL)
 	if err != nil {
 		t.Fatal("could not initialize client")
 	}
@@ -271,7 +271,7 @@ func TestCreateFileFailed(t *testing.T) {
 	teardown := setupTestServer(nil)
 	defer teardown()
 
-	g, err := New(ts.URL, false)
+	g, err := New(ts.URL)
 	if err != nil {
 		t.Fatal("could not initialize client")
 	}
