@@ -18,7 +18,7 @@ jobs:
       - name: setup
         uses: actions/setup-go@v5
       - name: release
-        uses: goreleaser/goreleaser-action@2.0.1
+        uses: goreleaser/goreleaser-action@master
         with:
           version: latest
           args: release --clean --config ./.goreleaser.yaml
