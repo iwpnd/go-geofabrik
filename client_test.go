@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/iwpnd/rip"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -267,29 +268,23 @@ func TestDownloadFailed(t *testing.T) {
 	}
 }
 
-func TestCreateFileFailed(t *testing.T) {
-	teardown := setupTestServer(nil)
-	defer teardown()
-
+func TestWriteOrRemove(t *testing.T) {
 	g, err := New(ts.URL)
 	if err != nil {
 		t.Fatal("could not initialize client")
 	}
-	ctx := context.Background()
-
-	err = g.Download(ctx, "bar", "bla")
-	if err == nil {
-		t.Fatal("expected error")
-	}
-
+	dir, err := os.MkdirTemp(".", "tmp")
 	if err != nil {
-		var got ErrCreateFile
-		isErrCreateFile := errors.As(err, &got)
-		want := ErrCreateFile{
-			Message: "open bla/bar-latest.osm.pbf: no such file or directory",
-		}
-
-		assert.Equal(t, true, isErrCreateFile)
-		assert.Equal(t, want, got)
+		t.Fatalf("error creating temp directory: %s", err)
 	}
+	defer os.RemoveAll(dir)
+
+	testfile := "foo-latest.osm.pbf"
+	err = g.writeOrRemove(testfile, &rip.Response{}, func(w io.Writer) error {
+		return fmt.Errorf("something went wrong")
+	})
+	if err == nil {
+		t.Fatal("expected ErrCopyFailed but got nil")
+	}
+	assert.Equal(t, false, fileExists(dir, testfile))
 }

@@ -1,10 +1,12 @@
 package geofabrik
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/iwpnd/rip"
@@ -124,7 +126,6 @@ func (g *Geofabrik) Polygon(ctx context.Context, name string) (*Polygon, error) 
 	polygon := NewPolygon(name, res.RawBody())
 	err = polygon.Process()
 	if err != nil {
-		// TODO: add error to errors.go
 		return &Polygon{}, err
 	}
 
@@ -143,13 +144,6 @@ func (g *Geofabrik) Download(ctx context.Context, name string, outpath string) e
 		outpath,
 		p.filename,
 	)
-
-	// TODO: sanitize outpath
-	out, err := os.Create(filepath)
-	if err != nil {
-		return ErrCreateFile{Message: err.Error()}
-	}
-	defer out.Close()
 
 	req := g.NR().SetHeader(
 		"Accept",
@@ -176,28 +170,71 @@ func (g *Geofabrik) Download(ctx context.Context, name string, outpath string) e
 		}
 	}
 
-	if g.withProgress {
-		g.progress.reset()
-		g.progress.setTotalByte(res.ContentLength())
-
-		mr := io.MultiWriter(out, g.progress)
-		_, err := io.Copy(mr, res.RawBody())
-		if err != nil {
-			return ErrCreateFile{
-				Message: err.Error(),
-			}
-		}
-		return nil
-	}
-
-	_, err = io.Copy(out, res.RawBody())
+	err = g.writeOrRemove(filepath, res, func(w io.Writer) error {
+		_, err := w.Write(res.Body())
+		return err
+	})
 	if err != nil {
-		if err != nil {
-			return ErrCopyFailed{
-				Message: err.Error(),
-			}
+		return ErrCopyFailed{
+			Message: err.Error(),
 		}
 	}
 
 	return nil
+}
+
+func (g *Geofabrik) writeOrRemove(dest string, res *rip.Response, write func(w io.Writer) error) (err error) {
+	f, err := os.CreateTemp(tmpDir(dest), "tmp-")
+	if err != nil {
+		return fmt.Errorf("while creating temporary file")
+	}
+
+	defer func() {
+		if err != nil {
+			f.Close()
+			os.Remove(f.Name())
+		}
+	}()
+
+	bufw := bufio.NewWriter(f)
+	w := io.Writer(bufw)
+
+	if g.withProgress {
+		g.progress.reset()
+		g.progress.setTotalByte(res.ContentLength())
+
+		w = io.MultiWriter(bufw, g.progress)
+	}
+
+	if err := write(w); err != nil {
+		return fmt.Errorf("while writing to temporary file")
+	}
+
+	if err := bufw.Flush(); err != nil {
+		return fmt.Errorf("while flushing bufwriter")
+	}
+
+	if err := f.Chmod(0644); err != nil {
+		return fmt.Errorf("while changing mode of file")
+	}
+
+	if err = f.Sync(); err != nil {
+		return fmt.Errorf("while syncing content to storage")
+	}
+
+	if err := f.Close(); err != nil {
+		return fmt.Errorf("while closing temporary file")
+	}
+
+	return os.Rename(f.Name(), dest)
+
+}
+
+func tmpDir(dest string) string {
+	tmpDir := os.Getenv("GEOFABRIK_TMPDIR")
+	if tmpDir == "" {
+		tmpDir = filepath.Dir(dest)
+	}
+
+	return tmpDir
 }

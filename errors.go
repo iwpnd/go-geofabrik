@@ -22,14 +22,6 @@ func (e ErrDownloadFailed) Error() string {
 	)
 }
 
-type ErrCreateFile struct {
-	Message string
-}
-
-func (e ErrCreateFile) Error() string {
-	return fmt.Sprintf("failed to create file: %s", e.Message)
-}
-
 type ErrCopyFailed struct {
 	Message string
 }
