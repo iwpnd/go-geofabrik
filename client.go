@@ -186,7 +186,7 @@ func (g *Geofabrik) Download(ctx context.Context, name string, outpath string) e
 func (g *Geofabrik) writeOrRemove(dest string, res *rip.Response, write func(w io.Writer) error) (err error) {
 	f, err := os.CreateTemp(tmpDir(dest), "tmp-")
 	if err != nil {
-		return fmt.Errorf("while creating temporary file")
+		return fmt.Errorf("while creating temporary file: %w", err)
 	}
 
 	defer func() {
@@ -207,23 +207,23 @@ func (g *Geofabrik) writeOrRemove(dest string, res *rip.Response, write func(w i
 	}
 
 	if err := write(w); err != nil {
-		return fmt.Errorf("while writing to temporary file")
+		return fmt.Errorf("while writing to temporary file: %w", err)
 	}
 
 	if err := bufw.Flush(); err != nil {
-		return fmt.Errorf("while flushing bufwriter")
+		return fmt.Errorf("while flushing bufwriter: %w", err)
 	}
 
 	if err := f.Chmod(0644); err != nil {
-		return fmt.Errorf("while changing mode of file")
+		return fmt.Errorf("while changing mode of file: %w", err)
 	}
 
 	if err = f.Sync(); err != nil {
-		return fmt.Errorf("while syncing content to storage")
+		return fmt.Errorf("while syncing content to storage: %w", err)
 	}
 
 	if err := f.Close(); err != nil {
-		return fmt.Errorf("while closing temporary file")
+		return fmt.Errorf("while closing temporary file: %w", err)
 	}
 
 	return os.Rename(f.Name(), dest)
