@@ -184,7 +184,21 @@ func (g *Geofabrik) Download(ctx context.Context, name string, outpath string) e
 }
 
 func (g *Geofabrik) writeOrRemove(dest string, res *rip.Response, write func(w io.Writer) error) (err error) {
-	f, err := os.CreateTemp(tmpDir(dest), "tmp-")
+	tDir := tmpDir(dest)
+	if _, err := os.Stat(tDir); os.IsNotExist(err) {
+		defer func() {
+			if err != nil {
+				os.RemoveAll(tDir)
+			}
+		}()
+
+		err = os.MkdirAll(tDir, os.ModePerm)
+		if err != nil {
+			return fmt.Errorf("while creating temporary directory: %w", err)
+		}
+	}
+
+	f, err := os.CreateTemp(tDir, "tmp-")
 	if err != nil {
 		return fmt.Errorf("while creating temporary file: %w", err)
 	}
@@ -227,7 +241,6 @@ func (g *Geofabrik) writeOrRemove(dest string, res *rip.Response, write func(w i
 	}
 
 	return os.Rename(f.Name(), dest)
-
 }
 
 func tmpDir(dest string) string {
