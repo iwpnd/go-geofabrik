@@ -1,6 +1,6 @@
 module github.com/iwpnd/go-geofabrik
 
-go 1.19
+go 1.24
 
 require (
 	github.com/iwpnd/rip v0.7.0

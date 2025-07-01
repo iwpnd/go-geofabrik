@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"strconv"
 	"strings"
@@ -14,21 +15,21 @@ type Polygon struct {
 	Name       string
 	rings      [][][]float64
 	scanner    bufio.Scanner
-	properties map[string]interface{}
+	properties map[string]any
 }
 
 // NewPolygon ..
 func NewPolygon(name string, data io.Reader) *Polygon {
 	return &Polygon{
 		Name:       name,
-		properties: map[string]interface{}{"name": name},
+		properties: map[string]any{"name": name},
 		rings:      [][][]float64{},
 		scanner:    *bufio.NewScanner(data),
 	}
 }
 
 // WithProperties attaches properties to the Polygon, defaults to {"name":p.name}
-func (p *Polygon) WithProperties(properties map[string]interface{}) *Polygon {
+func (p *Polygon) WithProperties(properties map[string]any) *Polygon {
 	p.properties = properties
 	return p
 }
@@ -43,14 +44,14 @@ func (p *Polygon) Process() error {
 		line := p.scanner.Text()
 		t := strings.Split(strings.TrimSpace(line), "   ")
 
-		if line == "END" {
+		if line == "END" { //nolint: gocritic
 			if !recording {
 				// end of file
 				continue
 			}
 
 			recording = false
-			idx = idx + 1
+			idx += 1
 		} else if len(t) > 1 {
 			recording = true
 			coords, err := parseStringSlice(t)
@@ -94,23 +95,30 @@ func (p *Polygon) ToFeature() (string, error) {
 			multi = append(multi, [][][]float64{})
 			multi[i] = [][][]float64{x}
 		}
-		rs, _ := json.Marshal(multi)
-		feature = feature + `"MultiPolygon","coordinates":` + string(rs) + `},`
+		rs, err := json.Marshal(multi)
+		if err != nil {
+			return "", fmt.Errorf("marshalling multipolygon: %w", err)
+		}
+		feature += `"MultiPolygon","coordinates":` + string(rs) + `},`
 	} else {
-		r, _ := json.Marshal(p.rings)
-		feature = feature + `"Polygon","coordinates":` + string(r) + `},`
+		r, err := json.Marshal(p.rings)
+		if err != nil {
+			return "", fmt.Errorf("marshalling polygon: %w", err)
+		}
+		feature += `"Polygon","coordinates":` + string(r) + `},`
 	}
 
-	data, _ := json.Marshal(p.properties)
-	feature = feature + `"properties":` + string(data)
-	feature = feature + `}`
+	data, err := json.Marshal(p.properties)
+	if err != nil {
+		return "", fmt.Errorf("marshalling feature properties: %w", err)
+	}
+	feature += `"properties":` + string(data)
+	feature += `}`
 
 	return feature, nil
 }
 
-func parseStringSlice(line []string) ([]float64, error) {
-	var out []float64
-
+func parseStringSlice(line []string) (out []float64, err error) {
 	for _, s := range line {
 		f, err := strconv.ParseFloat(s, 64)
 		if err != nil {

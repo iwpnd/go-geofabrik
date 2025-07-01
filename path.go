@@ -23,7 +23,7 @@ func newPath(name string, ftype FileType) (*Path, error) {
 
 func (p *Path) validate() error {
 	if p.name == "" {
-		return &ErrEmptyName{}
+		return &EmptyNameError{}
 	}
 
 	return nil
@@ -40,7 +40,7 @@ func (p *Path) process(ftype FileType) error {
 
 	elements := strings.Split(p.name, "/")
 	if len(elements) == 1 {
-		switch ftype {
+		switch ftype { //nolint: exhaustive
 		case polytype:
 			p.filename = fmt.Sprintf("%s%s", elements[0], ftype)
 		default:
@@ -50,7 +50,7 @@ func (p *Path) process(ftype FileType) error {
 		return nil
 	}
 
-	switch ftype {
+	switch ftype { //nolint: exhaustive
 	case polytype:
 		p.filename = fmt.Sprintf(
 			"%s%s",

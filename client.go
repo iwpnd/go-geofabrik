@@ -20,14 +20,14 @@ const (
 	polytype FileType = ".poly"
 )
 
-// Geofabrik ...
+// Geofabrik wraps a rest client.
 type Geofabrik struct {
 	*rip.Client
 	withProgress bool
 	progress     *Progress
 }
 
-// New ...
+// New is the constructor for a Geofabrik.
 func New(host string, options ...rip.Option) (*Geofabrik, error) {
 	c, err := rip.NewClient(host, options...)
 	if err != nil {
@@ -72,7 +72,7 @@ func (g *Geofabrik) MD5(ctx context.Context, name string) (string, error) {
 		p.uri,
 	)
 	if err != nil {
-		return "", ErrDownloadFailed{
+		return "", DownloadFailedError{
 			Message: err.Error(),
 			Code:    res.StatusCode(),
 			URL:     res.Request.URL,
@@ -80,7 +80,7 @@ func (g *Geofabrik) MD5(ctx context.Context, name string) (string, error) {
 	}
 
 	if res.StatusCode() >= 400 {
-		return "", ErrDownloadFailed{
+		return "", DownloadFailedError{
 			Code: res.StatusCode(),
 			URL:  res.Request.URL,
 		}
@@ -108,7 +108,7 @@ func (g *Geofabrik) Polygon(ctx context.Context, name string) (*Polygon, error) 
 		p.uri,
 	)
 	if err != nil {
-		return &Polygon{}, ErrDownloadFailed{
+		return &Polygon{}, DownloadFailedError{
 			Message: err.Error(),
 			Code:    res.StatusCode(),
 			URL:     res.Request.URL,
@@ -116,7 +116,7 @@ func (g *Geofabrik) Polygon(ctx context.Context, name string) (*Polygon, error) 
 	}
 
 	if res.StatusCode() >= 400 {
-		return &Polygon{}, ErrDownloadFailed{
+		return &Polygon{}, DownloadFailedError{
 			Code: res.StatusCode(),
 			URL:  res.Request.URL,
 		}
@@ -133,13 +133,13 @@ func (g *Geofabrik) Polygon(ctx context.Context, name string) (*Polygon, error) 
 }
 
 // Download a dataset to output path
-func (g *Geofabrik) Download(ctx context.Context, name string, outpath string) error {
+func (g *Geofabrik) Download(ctx context.Context, name, outpath string) error {
 	p, err := newPath(name, pbftype)
 	if err != nil {
 		return err
 	}
 
-	filepath := fmt.Sprintf(
+	fp := fmt.Sprintf(
 		"%s/%s",
 		outpath,
 		p.filename,
@@ -155,7 +155,7 @@ func (g *Geofabrik) Download(ctx context.Context, name string, outpath string) e
 		p.uri,
 	)
 	if err != nil {
-		return ErrDownloadFailed{
+		return DownloadFailedError{
 			Message: err.Error(),
 			Code:    res.StatusCode(),
 			URL:     res.Request.URL,
@@ -164,18 +164,18 @@ func (g *Geofabrik) Download(ctx context.Context, name string, outpath string) e
 	defer res.Close()
 
 	if res.IsError() {
-		return ErrDownloadFailed{
+		return DownloadFailedError{
 			Code: res.StatusCode(),
 			URL:  res.Request.URL,
 		}
 	}
 
-	err = g.writeOrRemove(filepath, res, func(w io.Writer) error {
+	err = g.writeOrRemove(fp, res, func(w io.Writer) error {
 		_, err := w.Write(res.Body())
 		return err
 	})
 	if err != nil {
-		return ErrCopyFailed{
+		return CopyFailedError{
 			Message: err.Error(),
 		}
 	}
@@ -188,11 +188,11 @@ func (g *Geofabrik) writeOrRemove(dest string, res *rip.Response, write func(w i
 	if _, err := os.Stat(tDir); os.IsNotExist(err) {
 		defer func() {
 			if err != nil {
-				os.RemoveAll(tDir)
+				err = os.RemoveAll(tDir)
 			}
 		}()
 
-		err = os.MkdirAll(tDir, os.ModePerm)
+		err = os.MkdirAll(tDir, 0o750)
 		if err != nil {
 			return fmt.Errorf("while creating temporary directory: %w", err)
 		}
@@ -205,8 +205,8 @@ func (g *Geofabrik) writeOrRemove(dest string, res *rip.Response, write func(w i
 
 	defer func() {
 		if err != nil {
-			f.Close()
-			os.Remove(f.Name())
+			_ = f.Close()           //nolint: errcheck
+			_ = os.Remove(f.Name()) //nolint: errcheck
 		}
 	}()
 
@@ -228,7 +228,7 @@ func (g *Geofabrik) writeOrRemove(dest string, res *rip.Response, write func(w i
 		return fmt.Errorf("while flushing bufwriter: %w", err)
 	}
 
-	if err := f.Chmod(0644); err != nil {
+	if err := f.Chmod(0o644); err != nil {
 		return fmt.Errorf("while changing mode of file: %w", err)
 	}
 

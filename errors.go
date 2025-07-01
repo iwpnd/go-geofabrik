@@ -2,19 +2,19 @@ package geofabrik
 
 import "fmt"
 
-type ErrEmptyName struct{}
+type EmptyNameError struct{}
 
-func (e ErrEmptyName) Error() string {
+func (e EmptyNameError) Error() string {
 	return "name is empty"
 }
 
-type ErrDownloadFailed struct {
+type DownloadFailedError struct {
 	URL     string
 	Message string
 	Code    int
 }
 
-func (e ErrDownloadFailed) Error() string {
+func (e DownloadFailedError) Error() string {
 	return fmt.Sprintf(
 		"download failed with: %s (code: %d)",
 		e.Message,
@@ -22,10 +22,10 @@ func (e ErrDownloadFailed) Error() string {
 	)
 }
 
-type ErrCopyFailed struct {
+type CopyFailedError struct {
 	Message string
 }
 
-func (e ErrCopyFailed) Error() string {
+func (e CopyFailedError) Error() string {
 	return fmt.Sprintf("failed to save file: %s", e.Message)
 }
