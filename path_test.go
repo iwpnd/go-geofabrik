@@ -19,31 +19,31 @@ func TestTokenizePath(t *testing.T) {
 			input:            "europe",
 			ftype:            pbftype,
 			expectedUri:      "/europe-latest.osm.pbf",
-			expectedFileName: "europe-latest.osm.pbf",
+			expectedFileName: "europe.osm.pbf",
 		},
 		"should tokenize two levels": {
 			input:            "europe/germany",
 			ftype:            pbftype,
 			expectedUri:      "/europe/germany-latest.osm.pbf",
-			expectedFileName: "germany-latest.osm.pbf",
+			expectedFileName: "germany.osm.pbf",
 		},
 		"should tokenize three levels": {
 			input:            "europe/germany/berlin",
 			ftype:            pbftype,
 			expectedUri:      "/europe/germany/berlin-latest.osm.pbf",
-			expectedFileName: "berlin-latest.osm.pbf",
+			expectedFileName: "berlin.osm.pbf",
 		},
 		"should persist other seperators": {
 			input:            "europe/ireland-and-northern-ireland",
 			ftype:            pbftype,
 			expectedUri:      "/europe/ireland-and-northern-ireland-latest.osm.pbf",
-			expectedFileName: "ireland-and-northern-ireland-latest.osm.pbf",
+			expectedFileName: "ireland-and-northern-ireland.osm.pbf",
 		},
 		"should sanitize input": {
 			input:            "/europe/",
 			ftype:            pbftype,
 			expectedUri:      "/europe-latest.osm.pbf",
-			expectedFileName: "europe-latest.osm.pbf",
+			expectedFileName: "europe.osm.pbf",
 		},
 	}
 

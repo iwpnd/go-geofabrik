@@ -216,7 +216,7 @@ func TestDownload(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	testfile := "foo-latest.osm.pbf"
+	testfile := "foo.osm.pbf"
 	assert.True(t, fileExists(dir, testfile))
 
 	got, err := os.ReadFile(fmt.Sprintf("%s/%s", dir, testfile))
@@ -259,7 +259,7 @@ func TestWriteOrRemove(t *testing.T) {
 	}
 	dir := t.TempDir()
 
-	testfile := "foo-latest.osm.pbf"
+	testfile := "foo.osm.pbf"
 	err = g.writeOrRemove(testfile, &rip.Response{}, func(w io.Writer) error {
 		return fmt.Errorf("something went wrong")
 	})

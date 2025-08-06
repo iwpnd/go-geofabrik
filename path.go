@@ -40,27 +40,30 @@ func (p *Path) process(ftype FileType) error {
 
 	elements := strings.Split(p.name, "/")
 	if len(elements) == 1 {
+		ds := elements[0]
 		switch ftype { //nolint: exhaustive
 		case polytype:
-			p.filename = fmt.Sprintf("%s%s", elements[0], ftype)
+			p.uri = fmt.Sprintf("/%s%s", ds, ftype)
 		default:
-			p.filename = fmt.Sprintf("%s-latest%s", elements[0], ftype)
+			p.uri = fmt.Sprintf("/%s-latest%s", ds, ftype)
 		}
-		p.uri = fmt.Sprintf("/%s", p.filename)
+		p.filename = fmt.Sprintf("%s%s", ds, ftype)
 		return nil
 	}
 
+	ds := elements[len(elements)-1]
+	var f string
 	switch ftype { //nolint: exhaustive
 	case polytype:
-		p.filename = fmt.Sprintf(
+		f = fmt.Sprintf(
 			"%s%s",
-			elements[len(elements)-1],
+			ds,
 			ftype,
 		)
 	default:
-		p.filename = fmt.Sprintf(
+		f = fmt.Sprintf(
 			"%s-latest%s",
-			elements[len(elements)-1],
+			ds,
 			ftype,
 		)
 	}
@@ -70,7 +73,13 @@ func (p *Path) process(ftype FileType) error {
 		strings.Join(
 			elements[0:len(elements)-1], "/",
 		),
-		p.filename,
+		f,
+	)
+
+	p.filename = fmt.Sprintf(
+		"%s%s",
+		ds,
+		ftype,
 	)
 
 	return nil
