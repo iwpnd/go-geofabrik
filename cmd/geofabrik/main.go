@@ -10,15 +10,19 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var g *geofabrik.Geofabrik
-var err error
-var latestMD5Command cli.Command
-var polygonCommand cli.Command
-var downloadCommand cli.Command
-var downloadIfChangedCommand cli.Command
+var (
+	g                        *geofabrik.Geofabrik
+	err                      error
+	latestMD5Command         cli.Command
+	polygonCommand           cli.Command
+	downloadCommand          cli.Command
+	downloadIfChangedCommand cli.Command
+)
 
-var md5Flag cli.StringFlag
-var outputPathFlag cli.StringFlag
+var (
+	md5Flag        cli.StringFlag
+	outputPathFlag cli.StringFlag
+)
 
 func latestMD5(ctx *cli.Context) error {
 	name := ctx.Args().First()
@@ -92,7 +96,7 @@ func download(ctx *cli.Context) error {
 }
 
 func init() {
-	g, err = geofabrik.NewWithProgress(
+	g, err = geofabrik.New(
 		"http://download.geofabrik.de",
 		rip.WithTimeout(0),
 	)

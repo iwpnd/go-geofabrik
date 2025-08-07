@@ -24,8 +24,6 @@ const (
 // Geofabrik wraps a rest client.
 type Geofabrik struct {
 	*rip.Client
-	withProgress bool
-	progress     *Progress
 }
 
 // New is the constructor for a Geofabrik.
@@ -36,23 +34,7 @@ func New(host string, options ...rip.Option) (*Geofabrik, error) {
 	}
 
 	return &Geofabrik{
-		Client:       c,
-		withProgress: false,
-		progress:     nil,
-	}, nil
-}
-
-// NewWithProgress will return a client including progress bar
-func NewWithProgress(host string, options ...rip.Option) (*Geofabrik, error) {
-	c, err := rip.NewClient(host, options...)
-	if err != nil {
-		return &Geofabrik{}, err
-	}
-
-	return &Geofabrik{
-		Client:       c,
-		withProgress: true,
-		progress:     newProgress(),
+		Client: c,
 	}, nil
 }
 
@@ -195,7 +177,7 @@ func (g *Geofabrik) Download(ctx context.Context, name, outpath string) error {
 		}
 	}
 
-	err = g.writeOrRemove(fp, res, func(w io.Writer) error {
+	err = g.writeOrRemove(fp, func(w io.Writer) error {
 		_, err := w.Write(res.Body())
 		return err
 	})
@@ -208,7 +190,7 @@ func (g *Geofabrik) Download(ctx context.Context, name, outpath string) error {
 	return nil
 }
 
-func (g *Geofabrik) writeOrRemove(dest string, res *rip.Response, write func(w io.Writer) error) (err error) {
+func (g *Geofabrik) writeOrRemove(dest string, write func(w io.Writer) error) (err error) {
 	tDir := tmpDir(dest)
 	if _, err := os.Stat(tDir); os.IsNotExist(err) {
 		defer func() {
@@ -237,13 +219,6 @@ func (g *Geofabrik) writeOrRemove(dest string, res *rip.Response, write func(w i
 
 	bufw := bufio.NewWriter(f)
 	w := io.Writer(bufw)
-
-	if g.withProgress {
-		g.progress.reset()
-		g.progress.setTotalByte(res.ContentLength())
-
-		w = io.MultiWriter(bufw, g.progress)
-	}
 
 	if err := write(w); err != nil {
 		return fmt.Errorf("while writing to temporary file: %w", err)

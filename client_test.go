@@ -14,7 +14,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/iwpnd/rip"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -294,7 +293,7 @@ func TestWriteOrRemove(t *testing.T) {
 	dir := t.TempDir()
 
 	testfile := "foo.osm.pbf"
-	err = g.writeOrRemove(testfile, &rip.Response{}, func(w io.Writer) error {
+	err = g.writeOrRemove(testfile, func(w io.Writer) error {
 		return fmt.Errorf("something went wrong")
 	})
 	if err == nil {
