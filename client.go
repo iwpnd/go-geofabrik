@@ -178,7 +178,7 @@ func (g *Geofabrik) Download(ctx context.Context, name, outpath string) error {
 	}
 
 	err = g.writeOrRemove(ctx, fp, func(w io.Writer) error {
-		_, err := w.Write(res.Body())
+		_, err := io.Copy(w, res.RawBody())
 		return err
 	})
 	if err != nil {
