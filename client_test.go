@@ -2,6 +2,7 @@ package geofabrik
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/iwpnd/rip"
 	"github.com/stretchr/testify/assert"
@@ -194,6 +196,38 @@ func TestGetMD5(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, fn(tc))
+	}
+}
+
+func TestDownloadCancel(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/europe/germany-latest.osm.pbf" {
+			time.Sleep(time.Second)
+			w.Header().Add("Content-Type", "application/octet-stream")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("OSM DATA"))
+			return
+		}
+
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	g, err := New(server.URL)
+	if err != nil {
+		t.Fatalf("New() error: %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	err = g.Download(ctx, "europe/germany", ".")
+	if err == nil {
+		t.Fatal("expected error due to context timeout, got nil")
+	}
+
+	if !errors.Is(err, context.DeadlineExceeded) && !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context cancellation error, got: %v", err)
 	}
 }
 

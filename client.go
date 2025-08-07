@@ -3,6 +3,7 @@ package geofabrik
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -72,20 +73,28 @@ func (g *Geofabrik) MD5(ctx context.Context, name string) (string, error) {
 		p.uri,
 	)
 	if err != nil {
-		return "", DownloadFailedError{
+		return "", errors.Join(err, DownloadFailedError{
 			Message: err.Error(),
 			Code:    res.StatusCode(),
 			URL:     res.Request.URL,
-		}
+		})
 	}
 
 	if res.StatusCode() >= 400 {
-		return "", DownloadFailedError{
+		return "", errors.Join(err, DownloadFailedError{
 			Code: res.StatusCode(),
 			URL:  res.Request.URL,
-		}
+		})
 	}
-	defer res.Close()
+	defer func() {
+		if cErr := res.Close(); cErr != nil {
+			if err == nil {
+				err = cErr
+			} else {
+				err = errors.Join(err, cErr)
+			}
+		}
+	}()
 
 	md5 := strings.Split(res.String(), "  ")[0]
 
@@ -108,11 +117,11 @@ func (g *Geofabrik) Polygon(ctx context.Context, name string) (*Polygon, error) 
 		p.uri,
 	)
 	if err != nil {
-		return &Polygon{}, DownloadFailedError{
+		return &Polygon{}, errors.Join(err, DownloadFailedError{
 			Message: err.Error(),
 			Code:    res.StatusCode(),
 			URL:     res.Request.URL,
-		}
+		})
 	}
 
 	if res.StatusCode() >= 400 {
@@ -121,7 +130,15 @@ func (g *Geofabrik) Polygon(ctx context.Context, name string) (*Polygon, error) 
 			URL:  res.Request.URL,
 		}
 	}
-	defer res.Close()
+	defer func() {
+		if cErr := res.Close(); cErr != nil {
+			if err == nil {
+				err = cErr
+			} else {
+				err = errors.Join(err, cErr)
+			}
+		}
+	}()
 
 	polygon := NewPolygon(name, res.RawBody())
 	err = polygon.Process()
@@ -155,13 +172,21 @@ func (g *Geofabrik) Download(ctx context.Context, name, outpath string) error {
 		p.uri,
 	)
 	if err != nil {
-		return DownloadFailedError{
+		return errors.Join(err, DownloadFailedError{
 			Message: err.Error(),
 			Code:    res.StatusCode(),
-			URL:     res.Request.URL,
-		}
+			// URL:     res.Request.URL,
+		})
 	}
-	defer res.Close()
+	defer func() {
+		if cErr := res.Close(); cErr != nil {
+			if err == nil {
+				err = cErr
+			} else {
+				err = errors.Join(err, cErr)
+			}
+		}
+	}()
 
 	if res.IsError() {
 		return DownloadFailedError{
