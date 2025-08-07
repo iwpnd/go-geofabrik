@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -293,11 +294,56 @@ func TestWriteOrRemove(t *testing.T) {
 	dir := t.TempDir()
 
 	testfile := "foo.osm.pbf"
-	err = g.writeOrRemove(testfile, func(w io.Writer) error {
+	err = g.writeOrRemove(t.Context(), testfile, func(w io.Writer) error {
 		return fmt.Errorf("something went wrong")
 	})
 	if err == nil {
 		t.Fatal("expected ErrCopyFailed but got nil")
 	}
 	assert.False(t, fileExists(dir, testfile))
+}
+
+func TestWriteOrRemoveCancellation(t *testing.T) {
+	g, err := New(ts.URL)
+	if err != nil {
+		t.Fatal("could not initialize client:", err)
+	}
+	dir := t.TempDir()
+
+	// create a cancellable context
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// schedule a cancel shortly after starting
+	go func() {
+		time.Sleep(10 * time.Millisecond)
+		cancel()
+	}()
+
+	// call writeOrRemove with a slow-writing func
+	dest := filepath.Join(dir, "foo.osm.pbf")
+	err = g.writeOrRemove(ctx, dest, func(w io.Writer) error {
+		buf := make([]byte, 1024)
+		for {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+				if _, err := w.Write(buf); err != nil {
+					return err
+				}
+				time.Sleep(5 * time.Millisecond)
+			}
+		}
+	})
+
+	// on cancellation we expect context.Canceled
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled but got %v", err)
+	}
+
+	// and the destination file must not exist
+	if fileExists(dir, "foo.osm.pbf") {
+		t.Fatal("file should have been removed on cancel")
+	}
 }

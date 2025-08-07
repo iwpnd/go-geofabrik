@@ -1,13 +1,17 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
-	"log"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	geofabrik "github.com/iwpnd/go-geofabrik"
 	"github.com/iwpnd/rip"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 var (
@@ -24,9 +28,9 @@ var (
 	outputPathFlag cli.StringFlag
 )
 
-func latestMD5(ctx *cli.Context) error {
-	name := ctx.Args().First()
-	md5, err := g.MD5(ctx.Context, name)
+func latestMD5(ctx context.Context, cmd *cli.Command) error {
+	name := cmd.Args().First()
+	md5, err := g.MD5(ctx, name)
 	if err != nil {
 		return err
 	}
@@ -35,9 +39,9 @@ func latestMD5(ctx *cli.Context) error {
 	return nil
 }
 
-func polygon(ctx *cli.Context) error {
-	name := ctx.Args().First()
-	polygon, err := g.Polygon(ctx.Context, name)
+func polygon(ctx context.Context, cmd *cli.Command) error {
+	name := cmd.Args().First()
+	polygon, err := g.Polygon(ctx, name)
 	if err != nil {
 		return err
 	}
@@ -50,14 +54,14 @@ func polygon(ctx *cli.Context) error {
 	return nil
 }
 
-func downloadIfChanged(ctx *cli.Context) error {
-	name := ctx.Args().First()
+func downloadIfChanged(ctx context.Context, cmd *cli.Command) error {
+	name := cmd.Args().First()
 
-	latestMD5, err := g.MD5(ctx.Context, name)
+	latestMD5, err := g.MD5(ctx, name)
 	if err != nil {
 		return err
 	}
-	md5 := ctx.String("md5")
+	md5 := cmd.String("md5")
 	if md5 == latestMD5 {
 		fmt.Printf(
 			"%s is up to date, no download required (latest md5: %s, input md5: %s)\n\n",
@@ -68,11 +72,16 @@ func downloadIfChanged(ctx *cli.Context) error {
 		return nil
 	}
 
-	outputPath := ctx.String("outputPath")
+	outputPath := cmd.String("outputPath")
 
 	fmt.Printf("downloading %s (%s) \n\n", name, latestMD5)
-	err = g.Download(ctx.Context, name, outputPath)
+	err = g.Download(ctx, name, outputPath)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			fmt.Printf("download canceled for %s (%s) \n\n", name, latestMD5)
+			return err
+		}
+		fmt.Printf("download error: %s \n\n", err)
 		return err
 	}
 	fmt.Printf("\n\nfinished downloading %s (%s)", name, latestMD5)
@@ -80,14 +89,19 @@ func downloadIfChanged(ctx *cli.Context) error {
 	return nil
 }
 
-func download(ctx *cli.Context) error {
-	name := ctx.Args().First()
+func download(ctx context.Context, cmd *cli.Command) error {
+	name := cmd.Args().First()
 
-	outputPath := ctx.String("outputPath")
+	outputPath := cmd.String("outputPath")
 
 	fmt.Printf("downloading %s \n\n", name)
-	err = g.Download(ctx.Context, name, outputPath)
+	err = g.Download(ctx, name, outputPath)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			fmt.Printf("download canceled for %s \n\n", name)
+			return err
+		}
+		fmt.Printf("download error: %s \n\n", err)
 		return err
 	}
 	fmt.Printf("\n\nfinished downloading %s", name)
@@ -145,7 +159,28 @@ func init() {
 }
 
 func main() {
-	app := &cli.App{
+	sigCh := make(chan os.Signal, 2)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+
+	shutdownCtx, shutdownCancel := context.WithCancel(context.Background())
+	defer shutdownCancel()
+
+	go func() {
+		<-sigCh
+		fmt.Println("shutdown requested; cleaning up…")
+
+		go func() {
+			<-sigCh
+			fmt.Println("forced exit")
+			os.Exit(1)
+		}()
+
+		// after 5s, cancel the shutdownCtx
+		time.Sleep(5 * time.Second)
+		shutdownCancel()
+	}()
+
+	app := &cli.Command{
 		Name:  "geofabrik",
 		Usage: "geofabrik",
 		Commands: []*cli.Command{
@@ -156,7 +191,7 @@ func main() {
 		},
 	}
 
-	if err := app.Run(os.Args); err != nil {
-		log.Fatal(err)
+	if err := app.Run(shutdownCtx, os.Args); err != nil {
+		os.Exit(1)
 	}
 }

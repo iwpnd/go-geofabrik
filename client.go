@@ -157,7 +157,7 @@ func (g *Geofabrik) Download(ctx context.Context, name, outpath string) error {
 		return errors.Join(err, DownloadFailedError{
 			Message: err.Error(),
 			Code:    res.StatusCode(),
-			// URL:     res.Request.URL,
+			URL:     res.Request.URL,
 		})
 	}
 	defer func() {
@@ -177,69 +177,100 @@ func (g *Geofabrik) Download(ctx context.Context, name, outpath string) error {
 		}
 	}
 
-	err = g.writeOrRemove(fp, func(w io.Writer) error {
+	err = g.writeOrRemove(ctx, fp, func(w io.Writer) error {
 		_, err := w.Write(res.Body())
 		return err
 	})
 	if err != nil {
-		return CopyFailedError{
+		return errors.Join(err, CopyFailedError{
 			Message: err.Error(),
-		}
+		})
 	}
 
 	return nil
 }
 
-func (g *Geofabrik) writeOrRemove(dest string, write func(w io.Writer) error) (err error) {
+func (g *Geofabrik) writeOrRemove(ctx context.Context, dest string, write func(w io.Writer) error) (err error) {
 	tDir := tmpDir(dest)
-	if _, err := os.Stat(tDir); os.IsNotExist(err) {
-		defer func() {
-			if err != nil {
-				err = os.RemoveAll(tDir)
-			}
-		}()
-
-		err = os.MkdirAll(tDir, 0o750)
-		if err != nil {
-			return fmt.Errorf("while creating temporary directory: %w", err)
+	if _, statErr := os.Stat(tDir); os.IsNotExist(statErr) {
+		if mkErr := os.MkdirAll(tDir, 0o750); mkErr != nil {
+			return fmt.Errorf("creating temporary directory %q: %w", tDir, mkErr)
 		}
 	}
 
 	f, err := os.CreateTemp(tDir, "tmp-")
 	if err != nil {
-		return fmt.Errorf("while creating temporary file: %w", err)
+		return fmt.Errorf("creating temporary file: %w", err)
 	}
 
 	defer func() {
 		if err != nil {
-			_ = f.Close()           //nolint: errcheck
-			_ = os.Remove(f.Name()) //nolint: errcheck
+			_ = f.Close()
+			_ = os.Remove(f.Name())
+			_ = os.RemoveAll(tDir)
 		}
 	}()
 
-	bufw := bufio.NewWriter(f)
-	w := io.Writer(bufw)
+	// instead of writing directly to f, we set up a pipe:
+	pr, pw := io.Pipe()
+	defer pr.Close()
 
-	if err := write(w); err != nil {
-		return fmt.Errorf("while writing to temporary file: %w", err)
+	// writer goroutine
+	done := make(chan error, 1)
+	go func() {
+		bufw := bufio.NewWriter(pw)
+		w := io.Writer(bufw)
+
+		if err := write(w); err != nil {
+			pw.CloseWithError(fmt.Errorf("while writing to pipe: %w", err))
+			done <- err
+			return
+		}
+		if err := bufw.Flush(); err != nil {
+			pw.CloseWithError(fmt.Errorf("while flushing: %w", err))
+			done <- err
+			return
+		}
+		pw.Close()
+		done <- nil
+	}()
+
+	// copy from the pipe into our temp file, and watch ctx.Done()
+	copyErrCh := make(chan error, 1)
+	go func() {
+		_, err := io.Copy(f, pr)
+		copyErrCh <- err
+	}()
+
+	select {
+	case <-ctx.Done():
+		// user cancelled: clean up
+		pw.CloseWithError(ctx.Err())
+		f.Close()
+		os.Remove(f.Name())
+		return ctx.Err()
+	case err := <-done:
+		if err != nil {
+			// writer goroutine failed early
+			f.Close()
+			os.Remove(f.Name())
+			return err
+		}
+		// writer finished; wait for the final copy into f
+		if err := <-copyErrCh; err != nil {
+			f.Close()
+			os.Remove(f.Name())
+			return err
+		}
 	}
 
-	if err := bufw.Flush(); err != nil {
-		return fmt.Errorf("while flushing bufwriter: %w", err)
-	}
-
-	if err := f.Chmod(0o644); err != nil {
-		return fmt.Errorf("while changing mode of file: %w", err)
-	}
-
+	// sync and rename
 	if err = f.Sync(); err != nil {
 		return fmt.Errorf("while syncing content to storage: %w", err)
 	}
-
 	if err := f.Close(); err != nil {
 		return fmt.Errorf("while closing temporary file: %w", err)
 	}
-
 	return os.Rename(f.Name(), dest)
 }
 
