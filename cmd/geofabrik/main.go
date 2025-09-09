@@ -192,6 +192,6 @@ func main() {
 	}
 
 	if err := app.Run(shutdownCtx, os.Args); err != nil {
-		os.Exit(1)
+		os.Exit(1) //nolint:gocritic
 	}
 }
