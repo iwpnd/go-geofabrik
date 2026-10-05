@@ -28,11 +28,8 @@ type Geofabrik struct {
 }
 
 // New is the constructor for a Geofabrik.
-func New(host string, options ...rip.Option) (*Geofabrik, error) {
-	c, err := rip.NewClient(host, options...)
-	if err != nil {
-		return &Geofabrik{}, err
-	}
+func New(host string) (*Geofabrik, error) {
+	c := rip.NewClient().SetBaseURL(host)
 
 	return &Geofabrik{
 		Client: c,
@@ -50,23 +47,22 @@ func (g *Geofabrik) MD5(ctx context.Context, name string) (string, error) {
 		"Accept",
 		"text/plain; charset=utf-8",
 	)
-	res, err := req.Execute(
+	res, err := req.Get(
 		ctx,
-		"GET",
 		p.uri,
 	)
 	if err != nil {
 		return "", errors.Join(err, DownloadFailedError{
 			Message: err.Error(),
 			Code:    res.StatusCode(),
-			URL:     res.Request.URL,
+			URL:     res.Request.URL.String(),
 		})
 	}
 
 	if res.StatusCode() >= 400 {
 		return "", errors.Join(err, DownloadFailedError{
 			Code: res.StatusCode(),
-			URL:  res.Request.URL,
+			URL:  res.Request.URL.String(),
 		})
 	}
 	defer func() {
@@ -79,7 +75,11 @@ func (g *Geofabrik) MD5(ctx context.Context, name string) (string, error) {
 		}
 	}()
 
-	md5 := strings.Split(res.String(), "  ")[0]
+	s, err := res.String()
+	if err != nil {
+		return "", err
+	}
+	md5 := strings.Split(s, "  ")[0]
 
 	return md5, nil
 }
@@ -94,23 +94,22 @@ func (g *Geofabrik) Polygon(ctx context.Context, name string) (*Polygon, error) 
 		"Accept",
 		"text/plain; charset=utf-8",
 	)
-	res, err := req.Execute(
+	res, err := req.Get(
 		ctx,
-		"GET",
 		p.uri,
 	)
 	if err != nil {
 		return &Polygon{}, errors.Join(err, DownloadFailedError{
 			Message: err.Error(),
 			Code:    res.StatusCode(),
-			URL:     res.Request.URL,
+			URL:     res.Request.URL.String(),
 		})
 	}
 
 	if res.StatusCode() >= 400 {
 		return &Polygon{}, DownloadFailedError{
 			Code: res.StatusCode(),
-			URL:  res.Request.URL,
+			URL:  res.Request.URL.String(),
 		}
 	}
 	defer func() {
@@ -123,7 +122,12 @@ func (g *Geofabrik) Polygon(ctx context.Context, name string) (*Polygon, error) 
 		}
 	}()
 
-	polygon := NewPolygon(name, res.RawBody())
+	b, err := res.Body()
+	if err != nil {
+		return &Polygon{}, err
+	}
+
+	polygon := NewPolygon(name, b)
 	err = polygon.Process()
 	if err != nil {
 		return &Polygon{}, err
@@ -149,16 +153,15 @@ func (g *Geofabrik) Download(ctx context.Context, name, outpath string) error {
 		"Accept",
 		"application/octet-stream",
 	)
-	res, err := req.Execute(
+	res, err := req.Get(
 		ctx,
-		"GET",
 		p.uri,
 	)
 	if err != nil {
 		return errors.Join(err, DownloadFailedError{
 			Message: err.Error(),
 			Code:    res.StatusCode(),
-			URL:     res.Request.URL,
+			URL:     res.Request.URL.String(),
 		})
 	}
 	defer func() {
@@ -174,12 +177,16 @@ func (g *Geofabrik) Download(ctx context.Context, name, outpath string) error {
 	if res.IsError() {
 		return DownloadFailedError{
 			Code: res.StatusCode(),
-			URL:  res.Request.URL,
+			URL:  res.Request.URL.String(),
 		}
 	}
 
 	err = g.writeOrRemove(ctx, fp, func(w io.Writer) error {
-		_, err := io.Copy(w, res.RawBody())
+		rc, err := res.Body()
+		if err != nil {
+			return err
+		}
+		_, err = io.Copy(w, rc)
 		return err
 	})
 	if err != nil {

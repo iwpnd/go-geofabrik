@@ -10,7 +10,6 @@ import (
 	"time"
 
 	geofabrik "github.com/iwpnd/go-geofabrik"
-	"github.com/iwpnd/rip"
 	"github.com/urfave/cli/v3"
 )
 
@@ -112,11 +111,11 @@ func download(ctx context.Context, cmd *cli.Command) error {
 func init() {
 	g, err = geofabrik.New(
 		"http://download.geofabrik.de",
-		rip.WithTimeout(0),
 	)
 	if err != nil {
 		panic("could not init geofabrik client")
 	}
+	g.SetTimeout(0)
 
 	md5Flag = cli.StringFlag{
 		Name:     "md5",

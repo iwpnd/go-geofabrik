@@ -2,6 +2,10 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/iwpnd/rip v0.7.1 h1:aiJt9AB4VkiSRtAfNVNJRQGeU0hD11c6R/HiWkqchhw=
 github.com/iwpnd/rip v0.7.1/go.mod h1:LYzzeCgh0xiDWZ/NHSI7wE8yQelRJUfiQ0nmR7qWmUA=
+github.com/iwpnd/rip v1.0.0-rc.5 h1:ESCbNwrmdfyLkgQ4M0+SKKlpg/vW4TZpPvSRqaARgFM=
+github.com/iwpnd/rip v1.0.0-rc.5/go.mod h1:ReoGZJZSNngN5tD4r1e3OxGm+sPQZKIvW5s21EngycU=
+github.com/iwpnd/rip v1.0.0-rc.6 h1:nLy9CqkXj7Fps7dC8hU9pWi01YeMk7h8fLykfE04BDU=
+github.com/iwpnd/rip v1.0.0-rc.6/go.mod h1:ReoGZJZSNngN5tD4r1e3OxGm+sPQZKIvW5s21EngycU=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOfJA=
